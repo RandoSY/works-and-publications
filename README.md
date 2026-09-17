@@ -4,6 +4,10 @@ This repository is the transmission layer of the Rando Young Intellectual Estate
 
 Publication is not decoration. It is part of implementation. A system that works only while its creator remembers how to use it has not yet survived.
 
+## Published tools and guides
+
+- **[ChatGPT Archive Browser](manuals/chatgpt-archive-browser/README.md)** — a general, local-only method for turning very large ChatGPT data exports into a searchable chronological HTML archive without publishing the underlying conversation data.
+
 ## Canonical publication families
 
 ### Project and system guides

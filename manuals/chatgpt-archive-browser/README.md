@@ -1,29 +1,53 @@
-# ChatGPT Archive Browser
+# ChatGPT Archive Toolkit
 
-Turn a very large ChatGPT data export into a private, searchable, chronological website that runs entirely on your own computer.
+Turn a very large ChatGPT data export into something you can **understand, browse, and audit** on your own computer.
 
-**Start here if you are not technical:** use the two-stage Windows workflow below. It deliberately separates **preparing the conversation files** from **building the browser**, so you can see and verify what is happening.
+This toolkit has two independent but complementary jobs:
 
-**Printable guide:** [ChatGPT Archive Browser - Getting Started User Guide v1.1.0 (PDF)](ChatGPT_Archive_Browser_User_Guide_v1.1.0.pdf)
+1. **Conversation Browser** — reconstruct the conversation corpus into a searchable chronological local website.
+2. **Library Audit** — compare `library-files.json` with the physical files actually present in the original export.
 
-> **Privacy first:** your ChatGPT export can contain highly personal material. Keep the original export, the conversation-only working ZIP, and the generated browser private unless you deliberately sanitize them.
+No cloud service or third-party Python package is required. The tools are read-only with respect to the original export.
 
-## The problem
+> **Privacy first:** a ChatGPT export can contain highly personal material. Keep the original export, working ZIPs, generated browser, and audit reports private unless you deliberately sanitize them.
 
-A large ChatGPT export is an excellent backup, but a poor reading interface. It may contain gigabytes of images, files, metadata, and one or many conversation JSON files. OpenAI documents that larger exports may contain numbered conversation JSON files rather than one `conversations.json` file.
+## Which tool do I use?
 
-The browser solves a different problem: **make the conversation history intelligible to a human**.
+| If you want to know... | Use | Input |
+|---|---|---|
+| What conversations do I have? | Conversation Browser | conversation JSON corpus |
+| What did I say first? How did ideas evolve? | Conversation Browser | conversation JSON corpus |
+| Which Library files are physically present in my export? | Library Audit | **original full export ZIP** |
+| Which Library records cannot be matched to a physical file? | Library Audit | **original full export ZIP** |
+
+### Important input distinction
+
+The Conversation Browser deliberately works from a reduced `ChatGPT_Conversations_Only.zip`.
+
+The Library Audit must work from the **ORIGINAL FULL ChatGPT export ZIP**, because it needs both the Library manifest and the physical exported assets.
+
+Do not audit the conversation-only ZIP.
+
+---
+
+# Part A — Conversation Browser
+
+**Printable guide:** [ChatGPT Archive Browser — Getting Started User Guide v1.1.0 (PDF)](ChatGPT_Archive_Browser_User_Guide_v1.1.0.pdf)
+
+## Why prepare a conversation-only ZIP?
+
+A large ChatGPT export can contain gigabytes of images, files, metadata, and one or many conversation JSON files. For conversation analysis, repeatedly processing all those assets is unnecessary.
 
 ```text
 ORIGINAL CHATGPT EXPORT.zip
         (source of truth)
                 |
-                | Stage 1 - collect conversation JSON only
+                | Stage 1 — collect conversation JSON only
                 v
 ChatGPT_Conversations_Only.zip
         (small working corpus)
                 |
-                | Stage 2 - build readable local website
+                | Stage 2 — build readable local website
                 v
 ChatGPT_Archive_Browser/
     index.html
@@ -31,7 +55,7 @@ ChatGPT_Archive_Browser/
     catalog.json
 ```
 
-## What to download
+## What to download for the Conversation Browser
 
 Put these four files together in one folder such as `C:\ChatGPT-Archive-Tools`:
 
@@ -40,173 +64,180 @@ Put these four files together in one folder such as `C:\ChatGPT-Archive-Tools`:
 - `chatgpt_archive_browser.py`
 - `run_windows.bat`
 
-You also need Python 3.9 or newer. No third-party Python packages are required.
+You need Python 3.9 or newer.
 
-## Stage 1 - make a clean conversation-only ZIP
+## Stage 1 — make a clean conversation-only ZIP
 
-### Recommended Windows method
-
-1. **Keep the original ChatGPT export ZIP unchanged.** Treat it as your master backup.
+1. Keep the original ChatGPT export ZIP unchanged.
 2. Drag the original export ZIP onto `prepare_windows.bat`.
-3. The helper scans the ZIP without extracting the entire multi-gigabyte export.
-4. It finds only:
-   - `conversations.json`, or
-   - numbered files such as `conversations-000.json`, `conversations-001.json`, ...
-5. It creates `ChatGPT_Conversations_Only.zip` beside the original export.
-6. It adds `CONVERSATION_FILES_MANIFEST.txt` so you can see exactly which conversation JSON files were collected.
-7. It verifies the new ZIP before reporting success.
+3. The helper finds `conversations.json` or all numbered `conversations-###.json` files.
+4. It creates `ChatGPT_Conversations_Only.zip` beside the original export.
+5. It adds `CONVERSATION_FILES_MANIFEST.txt` listing exactly what was collected.
+6. It verifies the new ZIP before reporting success.
 
-The new ZIP is **supposed to be much smaller** than the original export. It does not copy the large attachment and media tree.
+The new ZIP should be much smaller than the original because it intentionally excludes attachment/media assets.
 
-### What success looks like
-
-For a large export, opening `ChatGPT_Conversations_Only.zip` should show something like:
-
-```text
-conversations-000.json
-conversations-001.json
-conversations-002.json
-...
-CONVERSATION_FILES_MANIFEST.txt
-```
-
-For a smaller export, you may see only:
-
-```text
-conversations.json
-CONVERSATION_FILES_MANIFEST.txt
-```
-
-If the helper detects gaps in a numbered sequence, it warns you. Do not casually ignore that warning; first confirm the original export is complete.
-
-### Manual fallback: collect the JSON files yourself
-
-If you prefer not to use the helper:
-
-1. Right-click the original export ZIP and choose **Extract All**.
-2. Open the extracted folder.
-3. Search for `conversations*.json`.
-4. Copy **every** conversation JSON result into a new empty folder called `ChatGPT_Conversation_JSON`.
-5. If the files are numbered, sort by name and check that the sequence appears complete (`000`, `001`, `002`, ...).
-6. Do **not** substitute unrelated JSON files such as feedback, account, or shared-link metadata.
-7. Select the collected conversation JSON files and choose **Compress to ZIP file** (Windows 11) or **Send to > Compressed (zipped) folder** on older Windows versions.
-8. Name the result `ChatGPT_Conversations_Only.zip`.
-
-The automated helper is safer because it searches the original ZIP directly, avoids accidentally collecting unrelated JSON files, checks the numbered sequence, and verifies the output ZIP.
-
-## Stage 2 - build the browser
+## Stage 2 — build the browser
 
 1. Drag `ChatGPT_Conversations_Only.zip` onto `run_windows.bat`.
-2. The browser generator reads the conversation records and creates a folder named `ChatGPT_Archive_Browser` beside the ZIP.
-3. When the build finishes, `index.html` opens automatically.
+2. The generator creates `ChatGPT_Archive_Browser` beside the ZIP.
+3. When finished, `index.html` opens automatically.
 
-Inside the generated folder:
+The browser provides chronology, search, year/topic filtering, model information, opening-prompt previews, message/word counts, and Previous/Next navigation.
 
-- `index.html` - searchable master index
-- `conversations/` - one readable HTML transcript per conversation
-- `catalog.json` - machine-readable chronological catalog
-- `README.txt` - privacy reminder
+**Numbered conversation filenames are export chunks, not a chronological table of contents.** The browser sorts by each conversation's recorded `create_time`.
 
-## Why this two-stage setup is useful
+---
 
-The original export is a backup of many kinds of account data. The conversation-only ZIP is a **working corpus**. Keeping those roles separate has several advantages:
+# Part B — Library Audit
 
-- you never modify the master export;
-- you can confirm exactly which conversation files are being analyzed;
-- you avoid repeatedly processing gigabytes of attachments and media;
-- the smaller working ZIP is easier to copy, archive, or feed into other local tools;
-- troubleshooting becomes much simpler because the browser input contains only conversation records.
+**Getting started:** [Library Audit Guide](LIBRARY_AUDIT_GUIDE.md)
 
-## What the browser gives you
+## What problem does this solve?
 
-The local index supports:
+`library-files.json` is a manifest/catalog. The audit asks a different question:
 
-- true oldest-to-newest chronology using each conversation's `create_time`
-- newest-first, title, and length sorting
-- year filtering
-- broad heuristic topic categories
-- model information when present
-- title and indexed user-text search
-- opening-prompt previews
-- message and word counts
-- Previous / Next navigation through the full archive
+> For every Library record in the manifest, can I find a physical file inside the same export that strongly matches it?
 
-**Important:** numbered filenames are export chunks, not a chronological table of contents. The browser sorts by the timestamps inside the conversations.
+The audit does not modify or extract the full archive. It reads ZIP metadata directly and reports observable consistency.
 
-## Command-line equivalents
+## What to download for Library Audit
 
-Prepare the working ZIP:
+Put these two files beside the other toolkit files:
+
+- `audit_chatgpt_library.py`
+- `audit_library_windows.bat`
+
+## Easiest Windows procedure
+
+1. Find your **original full ChatGPT export ZIP**.
+2. Do not use `ChatGPT_Conversations_Only.zip`.
+3. Drag the original full export onto `audit_library_windows.bat`.
+4. The tool creates `ChatGPT_Library_Audit` beside the export.
+5. When finished it opens `ChatGPT_Library_Audit\index.html`.
+
+## What the Library Audit creates
+
+- `index.html` — searchable human report
+- `summary.json` — overall counts
+- `library_audit.csv` — one row per Library record
+- `library_audit.json` — detailed machine-readable audit
+- `unmatched_physical_files.csv` — non-structural physical files not selected as Library matches
+- `README.txt` — privacy reminder
+
+## Interpreting the results
+
+**MATCHED** — one physical export entry has strong evidence linking it to the Library record, such as path, filename, file/asset ID, or optional SHA-256.
+
+**AMBIGUOUS** — more than one physical file is equally plausible. The utility refuses to guess.
+
+**MISSING** — no sufficiently strong physical match was found. That may indicate an absent asset, changed export schema, or insufficient manifest metadata. It does **not**, by itself, prove deletion or an OpenAI defect.
+
+**UNMATCHED PHYSICAL FILES** — physical export files not selected as Library matches. These may belong to conversations or other export features and are not automatically errors.
+
+Size alone never counts as a match.
+
+## Optional SHA-256 verification
+
+If the manifest exposes SHA-256 values:
+
+```bash
+python audit_chatgpt_library.py "chatgpt-export.zip" -o ChatGPT_Library_Audit --hash --overwrite
+```
+
+Hash mode is intentionally optional because reading every candidate file can be slower on very large exports.
+
+---
+
+# Command-line equivalents
+
+Prepare conversation corpus:
 
 ```bash
 python prepare_conversations_zip.py "chatgpt-export.zip" -o ChatGPT_Conversations_Only.zip
 ```
 
-Build the browser:
+Build browser:
 
 ```bash
 python chatgpt_archive_browser.py "ChatGPT_Conversations_Only.zip" -o ChatGPT_Archive_Browser
 ```
 
-Optional small test build:
+Audit Library integrity:
 
 ```bash
-python chatgpt_archive_browser.py "ChatGPT_Conversations_Only.zip" -o browser-test --limit 100
+python audit_chatgpt_library.py "chatgpt-export.zip" -o ChatGPT_Library_Audit --overwrite
 ```
 
-## Why this scales to multi-gigabyte exports
+---
 
-The browser does not try to turn the full export into one enormous HTML page. It:
+# The complete archive workflow
 
-- reads ZIP members directly;
-- scans only conversation JSON;
-- incrementally parses top-level JSON arrays;
-- writes one HTML file per conversation;
-- keeps a compact search catalog in memory;
-- leaves large attachment/media assets in the original export.
+```text
+                         ORIGINAL FULL CHATGPT EXPORT.zip
+                              /                    \
+                             /                      \
+                            v                        v
+               collect conversation JSON       Library Audit
+                         |                        manifest ↔ files
+                         v                            |
+              ChatGPT_Conversations_Only.zip          v
+                         |                    integrity evidence
+                         v
+               Conversation Browser
+                         |
+                         v
+           searchable chronology + catalog
+                         |
+                         v
+                  AI / human synthesis
+```
 
-## What is intentionally not copied
+The original export remains the evidence source. The browser makes conversation history intelligible. The Library Audit checks the asset-manifest side of the export. Neither replaces the original export.
 
-The generated browser concentrates on text conversation history. Large images, uploads, and other exported assets remain in the original export. Non-text content may appear as a placeholder.
+# Why these tools exist
 
-The original export is therefore still the authoritative backup.
+Once a ChatGPT history grows to thousands of conversations and gigabytes of assets, manual inspection stops being practical. A useful archive needs separate layers:
 
-## Privacy and security
+- **preservation** — keep the original export unchanged;
+- **retrieval** — make conversations searchable and chronological;
+- **integrity** — determine what asset records can actually be matched to physical files;
+- **analysis** — use the catalog and reports to understand the corpus;
+- **human judgment** — decide what matters and what should survive.
 
-The tools use local Python file I/O. They do not upload your archive. The generated browser runs locally with `file://` URLs.
+# Privacy and security
 
-**Never publish the generated browser or `ChatGPT_Conversations_Only.zip` to a public repository unless you have intentionally reviewed and sanitized the contents.**
+The tools use local Python file I/O and do not upload your archive.
 
-## Troubleshooting
+The generated browser contains conversation text. The Library Audit report can contain sensitive filenames, paths, IDs, and metadata even though it does not embed file contents.
 
-### “Python 3 was not found”
-Install Python 3 from https://www.python.org/downloads/. On Windows, select **Add python.exe to PATH** if offered. Close the command window and try again.
+**Do not publish generated output folders unless you have intentionally reviewed and sanitized them.**
 
-### “No conversations JSON files were found”
-Make sure you supplied the original ChatGPT export ZIP, not a nested attachments ZIP or another archive.
+# Current OpenAI context
 
-### The working ZIP is dramatically smaller than the original
-That is expected. It contains conversation JSON, not the export's images and file assets.
+OpenAI's current documentation states that a data export can include conversation JSON plus files and other assets used in conversations. OpenAI also documents Library as the place where uploaded and generated files are saved when Library is available.
 
-### The helper warns about missing numbered files
-Stop and inspect the original export. A gap can mean an incomplete collection. Do not infer that the numbered filenames are dates; they are only export chunks.
+A recent OpenAI Developer Community report described Library manifest records whose corresponding physical files could not be found in an export. That report motivates integrity checking, but it is not treated here as a formal export specification. The Library Audit therefore reports only what is observable in the supplied export.
 
-### The browser contains no images from old conversations
-Expected. This utility is a conversation-text browser, not a reconstruction of every exported asset.
+Official references:
 
-## Official OpenAI reference
+- https://help.openai.com/en/articles/9106926
+- https://help.openai.com/en/articles/20001052
 
-OpenAI's current help documentation states that an exported ZIP may contain `conversations.json`, while larger exports may contain numbered conversation JSON files instead. Uploading those files elsewhere does not recreate the original ChatGPT sidebar.
+# Design principles
 
-https://help.openai.com/en/articles/9106926
-
-## Design principle
+Conversation workflow:
 
 ```text
 PRESERVE -> COLLECT -> VERIFY -> BUILD -> BROWSE
 ```
 
-Preserve the original. Collect the conversation corpus. Verify the working ZIP. Build a human interface. Then browse and analyze.
+Library workflow:
 
-## License
+```text
+PRESERVE -> INVENTORY -> MATCH -> FLAG UNCERTAINTY -> REVIEW
+```
+
+# License
 
 MIT. See `LICENSE`.

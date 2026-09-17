@@ -46,10 +46,11 @@ Do **not** run it against `ChatGPT_Conversations_Only.zip` if your goal is to de
 
 ## Easiest Windows procedure
 
-Put these two files together:
+Put these three files together:
 
 - `audit_chatgpt_artifacts.py`
 - `audit_artifacts_windows.bat`
+- `chatgpt_archive_browser.py` — shared parser used by the audit
 
 Then:
 
@@ -82,10 +83,6 @@ Conversation JSON can also preserve attachment records containing fields such as
 ### File-service references
 
 Some conversation records contain `file-service://file-...` identifiers even when the physical asset is not included in the ZIP.
-
-### Ordinary filename mentions
-
-The tool also recognizes artifact-like filenames in conversation text, but labels these as weak evidence. Mentioning `example.py` is not the same thing as proving that ChatGPT created a downloadable `example.py`.
 
 ### Inline code evidence
 
@@ -139,7 +136,6 @@ The report tells you **why** the utility believes an artifact existed:
 - `sandbox_download` — very strong generated-download evidence
 - `attachment_metadata` — strong conversation metadata evidence
 - `file_service_pointer` — strong file-service identifier evidence
-- `filename_mention` — weak textual evidence only
 
 Do not treat these as equal.
 

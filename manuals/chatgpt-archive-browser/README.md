@@ -105,6 +105,7 @@ Files:
 
 - `audit_chatgpt_artifacts.py`
 - `audit_artifacts_windows.bat`
+- `chatgpt_archive_browser.py` — shared conversation parser; keep it in the same folder
 
 This answers a different and especially important question for technical work:
 

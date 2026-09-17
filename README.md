@@ -6,7 +6,7 @@ Publication is not decoration. It is part of implementation. A system that works
 
 ## Published tools and guides
 
-- **[ChatGPT Archive Toolkit](manuals/chatgpt-archive-browser/README.md)** — local-only tools for turning very large ChatGPT data exports into a searchable chronological conversation archive and auditing `library-files.json` against the physical files actually present in the original export.
+- **[ChatGPT Archive Toolkit](manuals/chatgpt-archive-browser/README.md)** — local tools for structural export census, searchable conversation reconstruction, Library integrity checking, and preservation auditing of generated/downloadable artifacts.
 
 ## Canonical publication families
 

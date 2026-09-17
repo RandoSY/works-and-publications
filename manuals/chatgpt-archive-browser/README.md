@@ -2,194 +2,210 @@
 
 Turn a very large ChatGPT data export into a private, searchable, chronological website that runs entirely on your own computer.
 
-This project is for the point where a ChatGPT export is no longer a convenient backup but a corpus: years of conversations, many numbered JSON files, gigabytes of attachments, and no practical way to review the history in order.
+**Start here if you are not technical:** use the two-stage Windows workflow below. It deliberately separates **preparing the conversation files** from **building the browser**, so you can see and verify what is happening.
 
-## What problem does this solve?
+**Printable guide:** [ChatGPT Archive Browser - Getting Started User Guide v1.1.0 (PDF)](ChatGPT_Archive_Browser_User_Guide_v1.1.0.pdf)
 
-OpenAI data exports can contain `conversations.json`; larger exports may contain numbered conversation JSON files instead. OpenAI also notes that importing those files into another ChatGPT account makes them available as reference, but does **not** recreate the original conversations in the sidebar. See OpenAI's current help article: https://help.openai.com/en/articles/9106926
+> **Privacy first:** your ChatGPT export can contain highly personal material. Keep the original export, the conversation-only working ZIP, and the generated browser private unless you deliberately sanitize them.
 
-For a large archive, three things become awkward:
+## The problem
 
-1. The export is designed as data, not as a human-scale reading interface.
-2. The numbered files are chunks of the export, **not a trustworthy chronological table of contents**.
-3. A multi-gigabyte archive is too large to treat as one document or one browser page.
+A large ChatGPT export is an excellent backup, but a poor reading interface. It may contain gigabytes of images, files, metadata, and one or many conversation JSON files. OpenAI documents that larger exports may contain numbered conversation JSON files rather than one `conversations.json` file.
 
-The solution used here is deliberately simple: transform the conversation records into a static local website.
+The browser solves a different problem: **make the conversation history intelligible to a human**.
 
-## What it builds
+```text
+ORIGINAL CHATGPT EXPORT.zip
+        (source of truth)
+                |
+                | Stage 1 - collect conversation JSON only
+                v
+ChatGPT_Conversations_Only.zip
+        (small working corpus)
+                |
+                | Stage 2 - build readable local website
+                v
+ChatGPT_Archive_Browser/
+    index.html
+    conversations/
+    catalog.json
+```
 
-The generator produces:
+## What to download
 
-- `index.html` — searchable master index
-- `conversations/` — one readable HTML transcript per conversation
-- `catalog.json` — machine-readable chronological catalog
-- `README.txt` — a reminder that the generated material is private
+Put these four files together in one folder such as `C:\ChatGPT-Archive-Tools`:
 
-The index supports:
+- `prepare_conversations_zip.py`
+- `prepare_windows.bat`
+- `chatgpt_archive_browser.py`
+- `run_windows.bat`
+
+You also need Python 3.9 or newer. No third-party Python packages are required.
+
+## Stage 1 - make a clean conversation-only ZIP
+
+### Recommended Windows method
+
+1. **Keep the original ChatGPT export ZIP unchanged.** Treat it as your master backup.
+2. Drag the original export ZIP onto `prepare_windows.bat`.
+3. The helper scans the ZIP without extracting the entire multi-gigabyte export.
+4. It finds only:
+   - `conversations.json`, or
+   - numbered files such as `conversations-000.json`, `conversations-001.json`, ...
+5. It creates `ChatGPT_Conversations_Only.zip` beside the original export.
+6. It adds `CONVERSATION_FILES_MANIFEST.txt` so you can see exactly which conversation JSON files were collected.
+7. It verifies the new ZIP before reporting success.
+
+The new ZIP is **supposed to be much smaller** than the original export. It does not copy the large attachment and media tree.
+
+### What success looks like
+
+For a large export, opening `ChatGPT_Conversations_Only.zip` should show something like:
+
+```text
+conversations-000.json
+conversations-001.json
+conversations-002.json
+...
+CONVERSATION_FILES_MANIFEST.txt
+```
+
+For a smaller export, you may see only:
+
+```text
+conversations.json
+CONVERSATION_FILES_MANIFEST.txt
+```
+
+If the helper detects gaps in a numbered sequence, it warns you. Do not casually ignore that warning; first confirm the original export is complete.
+
+### Manual fallback: collect the JSON files yourself
+
+If you prefer not to use the helper:
+
+1. Right-click the original export ZIP and choose **Extract All**.
+2. Open the extracted folder.
+3. Search for `conversations*.json`.
+4. Copy **every** conversation JSON result into a new empty folder called `ChatGPT_Conversation_JSON`.
+5. If the files are numbered, sort by name and check that the sequence appears complete (`000`, `001`, `002`, ...).
+6. Do **not** substitute unrelated JSON files such as feedback, account, or shared-link metadata.
+7. Select the collected conversation JSON files and choose **Compress to ZIP file** (Windows 11) or **Send to > Compressed (zipped) folder** on older Windows versions.
+8. Name the result `ChatGPT_Conversations_Only.zip`.
+
+The automated helper is safer because it searches the original ZIP directly, avoids accidentally collecting unrelated JSON files, checks the numbered sequence, and verifies the output ZIP.
+
+## Stage 2 - build the browser
+
+1. Drag `ChatGPT_Conversations_Only.zip` onto `run_windows.bat`.
+2. The browser generator reads the conversation records and creates a folder named `ChatGPT_Archive_Browser` beside the ZIP.
+3. When the build finishes, `index.html` opens automatically.
+
+Inside the generated folder:
+
+- `index.html` - searchable master index
+- `conversations/` - one readable HTML transcript per conversation
+- `catalog.json` - machine-readable chronological catalog
+- `README.txt` - privacy reminder
+
+## Why this two-stage setup is useful
+
+The original export is a backup of many kinds of account data. The conversation-only ZIP is a **working corpus**. Keeping those roles separate has several advantages:
+
+- you never modify the master export;
+- you can confirm exactly which conversation files are being analyzed;
+- you avoid repeatedly processing gigabytes of attachments and media;
+- the smaller working ZIP is easier to copy, archive, or feed into other local tools;
+- troubleshooting becomes much simpler because the browser input contains only conversation records.
+
+## What the browser gives you
+
+The local index supports:
 
 - true oldest-to-newest chronology using each conversation's `create_time`
 - newest-first, title, and length sorting
-- year and month filtering
+- year filtering
 - broad heuristic topic categories
-- model information when present in the export
+- model information when present
 - title and indexed user-text search
 - opening-prompt previews
 - message and word counts
-- Previous / Next navigation through the whole archive
+- Previous / Next navigation through the full archive
 
-Everything is static HTML. No database server, web server, cloud account, or JavaScript framework is required.
+**Important:** numbered filenames are export chunks, not a chronological table of contents. The browser sorts by the timestamps inside the conversations.
 
-## Why this scales better than one giant HTML file
+## Command-line equivalents
 
-A multi-gigabyte export should not become a multi-gigabyte web page.
-
-This tool instead:
-
-- reads the ZIP directly; it does not extract the entire export first
-- scans only `conversations.json` / `conversations-###.json`
-- parses top-level JSON arrays incrementally
-- writes each conversation to its own HTML file
-- keeps only a compact catalog/search summary in memory
-- caps indexed user text per conversation (6,000 characters by default)
-- leaves large exported images and attachments untouched
-
-The result is much easier for an ordinary browser to handle.
-
-## Requirements
-
-- Python 3.9 or newer
-- A modern browser
-- Enough free disk space for the generated HTML transcripts
-
-No third-party Python packages are required.
-
-## Fastest use on Windows
-
-1. Download this repository or at least `chatgpt_archive_browser.py` and `run_windows.bat`.
-2. Put both files in the same folder.
-3. Drag your ChatGPT export ZIP onto `run_windows.bat`.
-4. The script creates `ChatGPT_Archive_Browser` next to the ZIP.
-5. When finished, it opens `index.html`.
-
-## Command-line use
+Prepare the working ZIP:
 
 ```bash
-python chatgpt_archive_browser.py "chatgpt-export.zip" -o ChatGPT_Archive_Browser
+python prepare_conversations_zip.py "chatgpt-export.zip" -o ChatGPT_Conversations_Only.zip
 ```
 
-Then open `ChatGPT_Archive_Browser/index.html`.
-
-You can also point it at an already-extracted export directory:
+Build the browser:
 
 ```bash
-python chatgpt_archive_browser.py "/path/to/export-folder" -o ChatGPT_Archive_Browser
+python chatgpt_archive_browser.py "ChatGPT_Conversations_Only.zip" -o ChatGPT_Archive_Browser
 ```
 
-Or a single conversation JSON file:
+Optional small test build:
 
 ```bash
-python chatgpt_archive_browser.py conversations.json -o ChatGPT_Archive_Browser
+python chatgpt_archive_browser.py "ChatGPT_Conversations_Only.zip" -o browser-test --limit 100
 ```
 
-### Useful options
+## Why this scales to multi-gigabyte exports
 
-Test on the first 100 conversations:
+The browser does not try to turn the full export into one enormous HTML page. It:
 
-```bash
-python chatgpt_archive_browser.py export.zip -o browser-test --limit 100
-```
-
-Replace an existing output folder:
-
-```bash
-python chatgpt_archive_browser.py export.zip -o ChatGPT_Archive_Browser --overwrite
-```
-
-Change how much user text is placed in the fast local search index:
-
-```bash
-python chatgpt_archive_browser.py export.zip -o ChatGPT_Archive_Browser --index-chars 12000
-```
-
-The full transcripts are still written even when the fast search index is capped.
-
-## Recommended workflow for very large exports (>7 GB)
-
-### 1. Preserve the original ZIP
-
-Treat the downloaded ChatGPT export as the source-of-truth backup. Do not modify it. Work from a copy if possible.
-
-### 2. Put the export on a drive with room to spare
-
-The generator does not extract all assets, but the HTML transcript set can still become large. Leave several gigabytes of free space.
-
-### 3. Run a small test first
-
-```bash
-python chatgpt_archive_browser.py export.zip -o browser-test --limit 100
-```
-
-Open `browser-test/index.html` and verify that titles, dates, and transcripts look sensible.
-
-### 4. Build the complete browser
-
-```bash
-python chatgpt_archive_browser.py export.zip -o ChatGPT_Archive_Browser --overwrite
-```
-
-Large archives take time because every conversation record must be parsed and rendered. The script prints progress as it works.
-
-### 5. Start with chronology, not filenames
-
-The archive index sorts on the actual `create_time` recorded inside each conversation. Do not assume that `conversations-000.json`, `conversations-001.json`, and so forth represent oldest-to-newest history.
-
-### 6. Use the browser as the human interface and `catalog.json` as the machine interface
-
-`index.html` is for reading and finding things.
-
-`catalog.json` is useful for later analysis: topic inventories, timelines, project extraction, statistics, or feeding selected subsets into other tools.
-
-## Privacy and security
-
-A ChatGPT data export can contain extremely personal material. The generated website contains readable copies of conversation text.
-
-**Do not publish your generated archive directory to GitHub or a public web host unless you have intentionally reviewed and sanitized it.**
-
-The generator itself sends nothing anywhere. It uses only local Python file I/O. The HTML browser works locally with `file://` URLs and does not require a network connection.
-
-Conversation text is HTML-escaped before being written to pages. That prevents archived HTML or script fragments from being executed as page markup.
+- reads ZIP members directly;
+- scans only conversation JSON;
+- incrementally parses top-level JSON arrays;
+- writes one HTML file per conversation;
+- keeps a compact search catalog in memory;
+- leaves large attachment/media assets in the original export.
 
 ## What is intentionally not copied
 
-The tool concentrates on the conversation corpus. It does not duplicate the export's potentially enormous attachment/media tree into the generated browser.
+The generated browser concentrates on text conversation history. Large images, uploads, and other exported assets remain in the original export. Non-text content may appear as a placeholder.
 
-Non-text message content may appear as a placeholder. The original export remains the authoritative source for files, images, and other assets.
+The original export is therefore still the authoritative backup.
 
-## Topic labels are only navigation aids
+## Privacy and security
 
-Topic classification is a lightweight keyword heuristic. It is useful for coarse browsing, but it is not an AI judgment about the meaning of a conversation. Expect an `Other` category and occasional imperfect labels.
+The tools use local Python file I/O. They do not upload your archive. The generated browser runs locally with `file://` URLs.
 
-If you need rigorous thematic analysis, use `catalog.json` as the starting point for a separate analysis pass.
+**Never publish the generated browser or `ChatGPT_Conversations_Only.zip` to a public repository unless you have intentionally reviewed and sanitized the contents.**
 
-## Export schema changes
+## Troubleshooting
 
-ChatGPT's export format can evolve. This program is intentionally defensive about missing fields and message branches, but future changes may require updates.
+### “Python 3 was not found”
+Install Python 3 from https://www.python.org/downloads/. On Windows, select **Add python.exe to PATH** if offered. Close the command window and try again.
 
-If a newer export stops working, keep the original ZIP intact and report the smallest reproducible structural example that does **not** contain private conversation text.
+### “No conversations JSON files were found”
+Make sure you supplied the original ChatGPT export ZIP, not a nested attachments ZIP or another archive.
+
+### The working ZIP is dramatically smaller than the original
+That is expected. It contains conversation JSON, not the export's images and file assets.
+
+### The helper warns about missing numbered files
+Stop and inspect the original export. A gap can mean an incomplete collection. Do not infer that the numbered filenames are dates; they are only export chunks.
+
+### The browser contains no images from old conversations
+Expected. This utility is a conversation-text browser, not a reconstruction of every exported asset.
+
+## Official OpenAI reference
+
+OpenAI's current help documentation states that an exported ZIP may contain `conversations.json`, while larger exports may contain numbered conversation JSON files instead. Uploading those files elsewhere does not recreate the original ChatGPT sidebar.
+
+https://help.openai.com/en/articles/9106926
 
 ## Design principle
 
 ```text
-opaque multi-gigabyte export
-        ↓
-streaming parse of conversation JSON
-        ↓
-chronological catalog + one page per conversation
-        ↓
-private local website you can actually read
+PRESERVE -> COLLECT -> VERIFY -> BUILD -> BROWSE
 ```
 
-The goal is not to replace the original export. It is to make the export intelligible.
+Preserve the original. Collect the conversation corpus. Verify the working ZIP. Build a human interface. Then browse and analyze.
 
 ## License
 

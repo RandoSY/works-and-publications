@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse, datetime as dt, html, io, json, re, shutil, sys, zipfile
 from pathlib import Path
 
-VERSION='1.0.0'; CHUNK=1024*1024
+VERSION='1.1.0'; CHUNK=1024*1024
 RX=re.compile(r'(?:^|/)conversations(?:-\d+)?\.json$',re.I)
 TOPICS={
 'Programming & Software':'python javascript typescript java c++ code coding program script api git github linux windows database sql debug',
